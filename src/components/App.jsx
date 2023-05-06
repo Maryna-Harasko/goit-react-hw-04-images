@@ -1,80 +1,78 @@
-import React, {Component} from "react";
-import { ToastContainer, toast } from "react-toastify";
-import { Modal } from "./Modal/Modal";
-import { Searchbar } from "./Searchbar/Searchbar";
-import { getImage } from "Service/Service";
-import { ImageGallery } from "./ImageGallery/ImageGallery";
-import { LoadButton } from "./Button/Button";
-import { Loader } from "./Loader/Loader";
-import { AppContainer, Image } from "./App.styled";
-import "react-toastify/dist/ReactToastify.css";
+import { useState, useEffect } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
+import { Modal } from './Modal/Modal';
+import { Searchbar } from './Searchbar/Searchbar';
+import { getImage } from 'Service/Service';
+import { ImageGallery } from './ImageGallery/ImageGallery';
+import { LoadButton } from './Button/Button';
+import { Loader } from './Loader/Loader';
+import { AppContainer, Image } from './App.styled';
+import 'react-toastify/dist/ReactToastify.css';
 
-export class App extends Component {
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setLoading] = useState(false);
+  const [totalHits, setTotalHits] = useState(0);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [isShowButton, setShowButton] = useState(false);
 
-  state = {
-    query: "",
-    hits: [],
-    page: 1,
-    isLoading: false,
-    totalHits: 0,
-    largeImageURL: "",
-    isShowButton: false
-  }
+  const handleFormSubmit = q => {
+    setQuery(q);
+    setHits([]);
+    setPage(1);
+    setShowButton(false);
+  };
 
-  async componentDidUpdate(_, prevState){
-    const { query, page } = this.state
-    if(prevState.query !== query || prevState.page !== page){
-      try{
-        this.setState({isLoading: true})
-        const { totalHits, hits: newHits } = await getImage(query, page)
-        this.setState(prevState => ({hits: [...prevState.hits, ...newHits], totalHits}))
-      }
-      catch (error) {console.log(error);}
-      finally{
-        this.setState({ isLoading: false })
-        const { totalHits, hits: newHits } = await getImage(query, page)
-        if (
-          (prevState.hits.length === 0 && newHits.length === totalHits) ||
-          (prevState.hits.length !== 0 && newHits.length < 12)
-        ) {
+  useEffect(() => {
+    if (!query) {
+      return;
+    }
+    const fetchImage = async () => {
+      try {
+        setLoading(true);
+        const { totalHits, hits } = await getImage(query, page);
+        setHits(prevHits => [...prevHits, ...hits]);
+        setTotalHits(totalHits);
+        setShowButton(true);
+        if (hits.length < 12 || (hits.length !== 0 && hits.length < 12)) {
+          setShowButton(false);
           toast.info('No more images this category');
         }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
       }
-    }
-}
+    };
+    fetchImage();
+  }, [query, page]);
 
-  handleFormSubmit = (q) => {
-      this.setState({query: q, hits:[], page: 1, isShowButton: false})
-  }
-
-  toggleModal =(largeImageURL = "") =>{
-    this.setState({largeImageURL: largeImageURL})
-  }
-
-  handleNextPage = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleNextPage = () => {
+    setPage(prevState => prevState + 1);
   };
- 
 
-  render(){
-    const { hits, isLoading, totalHits, largeImageURL, tag } = this.state;
-    const isShowBtn = !isLoading && hits.length !== totalHits;
-    return (
-      <AppContainer>
-        <Searchbar onSubmit = {this.handleFormSubmit}/>
-        {hits.length >0 && 
-          (<ImageGallery cards={hits} handleClickCard={this.toggleModal}/>)}
-        {isShowBtn && 
-          (<LoadButton onClick={this.handleNextPage} disabled={isLoading}/>
-        )}
-        {largeImageURL && (
-          <Modal onClose={this.toggleModal}>
-            <Image src={largeImageURL} alt={tag} />
-          </Modal>
-        )}
-        {isLoading && <Loader/>}
-        <ToastContainer />
-      </AppContainer>
-    );
-  }
+  const toggleModal = (largeImageURL = '') => {
+    setLargeImageURL(largeImageURL);
+  };
+
+  return (
+    <AppContainer>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {hits.length > 0 && (
+        <ImageGallery cards={hits} handleClickCard={toggleModal} />
+      )}
+      {isShowButton && (
+        <LoadButton onClick={handleNextPage} disabled={isLoading} />
+      )}
+      {largeImageURL && (
+        <Modal onClose={toggleModal}>
+          <Image src={largeImageURL} />
+        </Modal>
+      )}
+      {isLoading && <Loader />}
+      <ToastContainer />
+    </AppContainer>
+  );
 };
