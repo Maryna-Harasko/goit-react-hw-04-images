@@ -16,13 +16,12 @@ export const App = () => {
   const [isLoading, setLoading] = useState(false);
   const [totalHits, setTotalHits] = useState(0);
   const [largeImageURL, setLargeImageURL] = useState('');
-  const [isShowButton, setShowButton] = useState(false);
 
   const handleFormSubmit = q => {
     setQuery(q);
     setHits([]);
     setPage(1);
-    setShowButton(false);
+    setTotalHits(0);
   };
 
   useEffect(() => {
@@ -35,9 +34,7 @@ export const App = () => {
         const { totalHits, hits } = await getImage(query, page);
         setHits(prevHits => [...prevHits, ...hits]);
         setTotalHits(totalHits);
-        setShowButton(true);
         if (hits.length < 12 || (hits.length !== 0 && hits.length < 12)) {
-          setShowButton(false);
           toast.info('No more images this category');
         }
       } catch (error) {
@@ -57,6 +54,7 @@ export const App = () => {
     setLargeImageURL(largeImageURL);
   };
 
+  const isShowButton = !isLoading && hits.length !== totalHits;
   return (
     <AppContainer>
       <Searchbar onSubmit={handleFormSubmit} />

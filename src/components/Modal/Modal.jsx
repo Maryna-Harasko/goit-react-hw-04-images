@@ -6,13 +6,13 @@ import { ModalOverlay, ModalEl } from './Modal.styled';
 const modalRoot = document.querySelector('#modal-root');
 
 export const Modal = ({ onClose, children }) => {
-  const onCloseKey = e => {
-    if (e.code === 'Escape') {
-      onClose();
-    }
-  };
+  useEffect(() => {
+    const onCloseKey = e => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
+    };
 
-  useEffect(() =>{
     window.addEventListener('keydown', onCloseKey);
     document.body.style.overflow = 'hidden';
 
@@ -20,7 +20,7 @@ export const Modal = ({ onClose, children }) => {
       window.removeEventListener('keydown', onCloseKey);
       document.body.style.overflow = 'auto';
     };
-  },[onClose])
+  }, [onClose]);
 
   const onCloseBackdrop = e => {
     if (e.currentTarget === e.target) {
